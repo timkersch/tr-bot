@@ -3,12 +3,11 @@
 const dynamo = require('dynamodb');
 dynamo.AWS.config.update({accessKeyId: '', secretAccessKey: '', region: "us-east-1"});
 
-const Report = require('./dbModel').Report;
-const Pause = require('./dbModel').Pause;
+const Logging = require('./dbModel').Logging;
 
 function setStart(user, today) {
     const id = user.concat(today);
-    Report.create({
+    Logging.create({
         id: id,
         user: user,
         date: today,
@@ -21,7 +20,7 @@ function setStart(user, today) {
 
 function setStop(user, today) {
     const id = user.concat(today);
-    Report.update({
+    Logging.update({
         id: id,
         counter: 0
     }, (err, post) => {
