@@ -1,0 +1,21 @@
+{
+  "name": "tr-bot",
+  "description": "A serverless time logging Slackbot",
+  "version": "1.0.0",
+  "author": "Tim Kerschbaumer <tim.kersch@gmail.com>",
+  "homepage": "https://github.com/timkersch/tr-bot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/timkersch/tr-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/timkersch/tr-bot/issues"
+  },
+  "dependencies": {
+    "dtrace-provider": "^0.8.7",
+    "dynamodb": "^1.1.2",
+    "joi": "^14.1.0",
+    "serverless-slack": "^1.0.25",
+    "xlsx": "^0.14.1"
+  }
+}
