@@ -3,7 +3,7 @@
 const dynamo = require('dynamodb');
 const Joi = require('joi');
 
-const Logging = dynamo.define('Logging', {
+const Log = dynamo.define('Log', {
     hashKey: 'id',
     timestamps: true,
 
@@ -12,9 +12,11 @@ const Logging = dynamo.define('Logging', {
         user: Joi.string(),
         date: Joi.string(),
         counter: Joi.number(),
-    }
+    },
+
+    tableName: 'logs'
 });
 
 module.exports = {
-    Logging: Logging,
+    Log: Log,
 }
