@@ -10,8 +10,7 @@ custom:
   slack_enable_logging: true
 
   # Dynamodb tables 
-  reports_table_name: reports
-  pauses_table_name: pauses
+  table_name: logs
 
   # The path used to post Slack events to
   slack_event_path: slack
@@ -23,16 +22,16 @@ custom:
   slack_install_redirect: https://slack.com
 
   # Verification token
-  slack_verification_token: '${SLACK_VERIFICATION_TOKEN}'            
+  slack_verification_token: ''            
   
   # Space delimited scopes
   slack_client_scopes: "bot commands incoming-webhook"
   
   # Client ID - quotes required
-  slack_client_id: '${SLACK_CLIENT_ID}'
+  slack_client_id: ''
   
   # Client Secret - quotes required
-  slack_client_secret: '${SLACK_CLIENT_SECRET}'
+  slack_client_secret: ''
   
 
 provider:
@@ -51,7 +50,7 @@ provider:
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:us-east-1:*:*"
   environment:
-    TABLE_NAME: ${self:custom.slack_table_name}
+    TABLE_NAME: ${self:custom.table_name}
     CLIENT_ID: ${self:custom.slack_client_id}
     CLIENT_SECRET: ${self:custom.slack_client_secret}
     CLIENT_SCOPES: ${self:custom.slack_client_scopes}
@@ -110,21 +109,4 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:custom.reports_table_name}
-
-      TeamsDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
-      Properties:
-        AttributeDefinitions:
-          -
-            AttributeName: id
-            AttributeType: S
-        KeySchema:
-          -
-            AttributeName: id
-            KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: ${self:custom.pauses_table_name}
+        TableName: ${self:custom.table_name}
