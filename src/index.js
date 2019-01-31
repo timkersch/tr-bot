@@ -10,18 +10,15 @@ const db = require('./db');
 exports.handler = slack.handler.bind(slack);
 
 slack.on('/start', (msg, bot) => {
-  console.log('in start');
-  console.log(msg);
-  
   const ticket = msg['text'] ? msg['text'] : '';
   const user = msg['user_id'];
   db.setStart(user, '2018-01-01', ticket, (success) => {
     if (success) {
       let text = '';
       if (ticket) {
-        text = 'Okay, time logging for ticket: ' + ticket + ' started';
+        text = 'Time logging for ticket: ' + ticket + ' started';
       } else {
-        text = 'Okay, time logging started.';
+        text = 'Time logging started.';
       }
       const message = {
         text: text
@@ -33,27 +30,23 @@ slack.on('/start', (msg, bot) => {
   });
 });
 
-slack.on('/stop', (msg, bot) => {
-  console.log('in stop');
-  console.log(msg);
-  
+slack.on('/stop', (msg, bot) => {  
   const user = msg['user_id'];
-  // TODO display which ticket was in progress and how long it was logged for
   db.setStop(user, '2018-01-01', (ticket, time) => {
     let text;
-    if (ticket == null && time == null) {
+    if (ticket === null && time === null) {
       text = "You don't have any active time logging. Please start a new logging with /start ticket-id before stopping."
     } else {
-      text = "Okay, time logging ended.";
+      text = "Time logging ended. Logged: " + (time / (1000*60*60)).toFixed(2) + " hours";
+      if (ticket !== '') {
+        text = text.concat(' on ticket: ' + ticket);
+      }
     }
     bot.replyPrivate({text: text}); 
   });
 });
 
 slack.on('/export', (msg, bot) => {
-  console.log('in export');
-  console.log(msg);
-
   const user = msg['user_id'];
   let message = {
     text: "Sure, what do you want to export?",
@@ -73,9 +66,6 @@ slack.on('/export', (msg, bot) => {
 
 // Interactive Message handler
 slack.on('export_click', (msg, bot) => {
-  console.log('in export click');
-  console.log(msg);
-
   const res = msg.actions[0].value;
   let message = { 
     text: res 

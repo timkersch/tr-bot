@@ -9,13 +9,11 @@ function isActive(user, today, cb) {
     Log
         .query(user)
         .usingIndex('userIndex')
-        .descending()
-        .attributes(['active'])
-        .limit(1)
+        .where('date_ticket').beginsWith(today)
+        .filter('active').equals(true)
         .exec((err, post)  => {
-            console.log(err);
-            if (!err && post.Items && post.Items.length > 0) {
-                cb(post.Items[0].attrs['active']);
+            if (post && post.Count > 0) {
+                cb(true);
             } else {
                 cb(false);
             }
@@ -28,11 +26,8 @@ function setStart(user, today, ticket, successCallback) {
     
     // See if this ID already exists
     Log.get(id, (err, post) => {
-        console.log(err);
-        console.log(post);
         // If it does not exist
-        if (err !== null || post === null) {
-            console.log('in first if');
+        if (err !== null || post === null || post.get('active')) {
             isActive(user, today, (active) => {
                 if (!active) {            
                     Log.create({
@@ -44,8 +39,6 @@ function setStart(user, today, ticket, successCallback) {
                         active: true,
                         counter: 0,
                     }, (err, post) => {
-                        console.log(err);
-                        console.log(post);
                         successCallback(true);
                     });
                 } else {
@@ -54,18 +47,20 @@ function setStart(user, today, ticket, successCallback) {
             });
         // If active
         } else if(post !== null && post.get('active')) {
-            console.log('in else if');
             successCallback(false);
         // If it exists but is not active - activate again
         } else {
-            console.log('in else');
-            Log.update({
-                id: id,
-                active: true
-            }, (err, post) => {
-                console.log(err);
-                console.log(post);
-                successCallback(true);
+            isActive(user, today, (active) => {
+                if (!active) {
+                    Log.update({
+                        id: id,
+                        active: true
+                    }, (err, post) => {
+                        successCallback(true);
+                    });
+                } else {
+                    successCallback(false);
+                }
             });
         }
     });
@@ -75,10 +70,10 @@ function setStop(user, today, cb) {
     Log
         .query(user)
         .usingIndex('userIndex')
-        .descending()
-        .limit(1)
+        .where('date_ticket').beginsWith(today)
+        .filter('active').equals(true)
         .exec((err, post) => {
-            if (!err && post.Items && post.Items.length > 0 && post.Items[0].attrs['active']) {
+            if (!err && post && post.Count > 0) {
                 const attrs = post.Items[0].attrs;
                 const id = attrs['id'];
                 const ticket = attrs['ticket']
@@ -93,14 +88,11 @@ function setStop(user, today, cb) {
                     counter: newCounter,
                     active: false
                 }, (err, post) => {
-                    console.log(err);
-                    console.log(post);
-                    cb(ticket, newCounter);
+                    cb(ticket, timeDiff);
                 });
             } else {
                 cb(null, null);
             }
-            console.log(post);
         });
 }
 
