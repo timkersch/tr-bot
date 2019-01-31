@@ -3,21 +3,21 @@ const Joi = require('joi');
 const dynamo = require('dynamodb');
 
 const Log = dynamo.define('Log', {
-    hashKey: 'id',
+    hashKey: 'user',
+    rangeKey: 'dateTicket',
     timestamps: true,
 
     schema: {
-        id: Joi.string(),
         user: Joi.string(),
         date: Joi.string().regex(/\d{4}-\d{2}-\d{2}/),
         ticket: Joi.string().allow('').default(''),
-        date_ticket: Joi.string().regex(/\d{4}-\d{2}-\d{2}_\S*/),
+        dateTicket: Joi.string().regex(/\d{4}-\d{2}-\d{2}_\S*/),
         counter: Joi.number().default(0),
         active: Joi.boolean().default(true)
     },
 
     indexes : [{
-        hashKey : 'user', rangeKey : 'date_ticket', name : 'userIndex', type : 'global'
+        hashKey : 'user', rangeKey : 'updatedAt', name : 'userDate', type : 'global'
     }],
 
     tableName: 'logs'

@@ -8,8 +8,7 @@ const Log = require('./dbModel').Log;
 function isActive(user, today, cb) {
     Log
         .query(user)
-        .usingIndex('userIndex')
-        .where('date_ticket').beginsWith(today)
+        .where('dateTicket').beginsWith(today)
         .filter('active').equals(true)
         .exec((err, post)  => {
             if (post && post.Count > 0) {
@@ -21,20 +20,18 @@ function isActive(user, today, cb) {
 }
 
 function setStart(user, today, ticket, successCallback) {
-    const date_ticket = today.concat('_').concat(ticket);
-    const id = user.concat('_').concat(date_ticket);
+    const dateTicket = today.concat('_').concat(ticket);
     
     // See if this ID already exists
-    Log.get(id, (err, post) => {
+    Log.get(user, dateTicket, (err, post) => {
         // If it does not exist
         if (err !== null || post === null || post.get('active')) {
             isActive(user, today, (active) => {
                 if (!active) {            
                     Log.create({
-                        id: id,
                         user: user,
                         date: today,
-                        date_ticket: date_ticket,
+                        dateTicket: dateTicket,
                         ticket: ticket,
                         active: true,
                         counter: 0,
@@ -53,7 +50,8 @@ function setStart(user, today, ticket, successCallback) {
             isActive(user, today, (active) => {
                 if (!active) {
                     Log.update({
-                        id: id,
+                        user: user,
+                        dateTicket: dateTicket,
                         active: true
                     }, (err, post) => {
                         successCallback(true);
@@ -69,13 +67,12 @@ function setStart(user, today, ticket, successCallback) {
 function setStop(user, today, cb) {
     Log
         .query(user)
-        .usingIndex('userIndex')
-        .where('date_ticket').beginsWith(today)
+        .where('dateTicket').beginsWith(today)
         .filter('active').equals(true)
         .exec((err, post) => {
             if (!err && post && post.Count > 0) {
                 const attrs = post.Items[0].attrs;
-                const id = attrs['id'];
+                const dateTicket = attrs['dateTicket'];
                 const ticket = attrs['ticket']
                 const counter = attrs['counter'];
                 
@@ -84,7 +81,8 @@ function setStop(user, today, cb) {
                 const timeDiff = Date.now() - latestModified.getTime();
                 const newCounter = counter + timeDiff;
                 Log.update({
-                    id: id,
+                    user: user,
+                    dateTicket: dateTicket,
                     counter: newCounter,
                     active: false
                 }, (err, post) => {
