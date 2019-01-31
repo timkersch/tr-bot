@@ -12,6 +12,9 @@ custom:
   # Dynamodb tables 
   table_name: logs
 
+  # User table
+  user_table_name: users
+
   # The path used to post Slack events to
   slack_event_path: slack
 
@@ -39,7 +42,7 @@ provider:
   runtime: nodejs8.10
   profile: default
   environment:
-    TABLE_NAME: ${self:custom.table_name}
+    TABLE_NAME: ${self:custom.user_table_name}
     CLIENT_ID: ${self:custom.slack_client_id}
     CLIENT_SECRET: ${self:custom.slack_client_secret}
     CLIENT_SCOPES: ${self:custom.slack_client_scopes}
@@ -121,3 +124,17 @@ resources:
           ProvisionedThroughput:
             ReadCapacityUnits: '1'
             WriteCapacityUnits: '1'
+
+    UsersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: '1'
+          WriteCapacityUnits: '1'
+        TableName: ${self:custom.user_table_name}
