@@ -38,6 +38,14 @@ provider:
   name: aws
   runtime: nodejs8.10
   profile: default
+  environment:
+    TABLE_NAME: ${self:custom.table_name}
+    CLIENT_ID: ${self:custom.slack_client_id}
+    CLIENT_SECRET: ${self:custom.slack_client_secret}
+    CLIENT_SCOPES: ${self:custom.slack_client_scopes}
+    INSTALL_REDIRECT: ${self:custom.slack_install_redirect}
+    VERIFICATION_TOKEN: ${self:custom.slack_verification_token}
+    ENABLE_LOGGING: ${self:custom.slack_enable_logging}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -49,15 +57,6 @@ provider:
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
       Resource: "arn:aws:dynamodb:us-east-1:*:*"
-  environment:
-    TABLE_NAME: ${self:custom.table_name}
-    CLIENT_ID: ${self:custom.slack_client_id}
-    CLIENT_SECRET: ${self:custom.slack_client_secret}
-    CLIENT_SCOPES: ${self:custom.slack_client_scopes}
-    INSTALL_REDIRECT: ${self:custom.slack_install_redirect}
-    VERIFICATION_TOKEN: ${self:custom.slack_verification_token}
-    ENABLE_LOGGING: ${self:custom.slack_enable_logging}
-
 
 functions:
   slack:
@@ -89,24 +88,36 @@ functions:
                 pattern: http.*
                 headers:
                   Location: integration.response.body.errorMessage
-                  Cache-Control: "'no-cache, no-store, must-revalidate'"      
-
+                  Cache-Control: "'no-cache, no-store, must-revalidate'"
 
 resources:
   Resources:
-    TeamsDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
+    LogsTable:
+      Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: id
-            AttributeType: S
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: user
+          AttributeType: S
+        - AttributeName: date_ticket
+          AttributeType: S
         KeySchema:
-          -
-            AttributeName: id
-            KeyType: HASH
+        - AttributeName: id
+          KeyType: HASH
         ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          ReadCapacityUnits: '1'
+          WriteCapacityUnits: '1'
         TableName: ${self:custom.table_name}
+        GlobalSecondaryIndexes:
+        - IndexName: userIndex
+          KeySchema:
+          - AttributeName: user
+            KeyType: HASH
+          - AttributeName: date_ticket
+            KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: '1'
+            WriteCapacityUnits: '1'

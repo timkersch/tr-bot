@@ -12,6 +12,7 @@
     "url": "https://github.com/timkersch/tr-bot/issues"
   },
   "dependencies": {
+    "dotenv": "^6.2.0",
     "dtrace-provider": "^0.8.7",
     "dynamodb": "^1.1.2",
     "joi": "^14.1.0",
