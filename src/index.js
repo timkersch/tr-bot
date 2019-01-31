@@ -12,7 +12,7 @@ exports.handler = slack.handler.bind(slack);
 function getDate(offset) {
   const date = new Date(); 
   date.setTime(date.getTime() + (offset*1000));
-  return date.toISOString().split('T')[0]
+  return date.toISOString().split('T')[0];
 }
  
 slack.on('/start', (msg, bot) => {
@@ -22,24 +22,18 @@ slack.on('/start', (msg, bot) => {
   bot.send('users.info', { user: user }).then(data => {
     const day = getDate(data['user']['tz_offset']);
 
-    db.setStart(user, day, ticket, (success) => {
-      if (success) {
-        let text = '';
-        if (ticket) {
-          text = 'Time logging for ticket: ' + ticket + ' started';
-        } else {
-          text = 'Time logging started.';
-        }
-        const message = {
-          text: text
-        };
-        bot.replyPrivate(message); 
+    db.setStart(user, day, ticket).then((success) => {
+      let text = '';
+      if (ticket) {
+        text = 'Time logging for ticket: ' + ticket + ' started';
       } else {
-        bot.replyPrivate({text: 'You already have on active logging. Please stop it with /stop before starting a new.'});
+        text = 'Time logging started.';
       }
+      bot.replyPrivate({text: text}); 
+    }).catch((err) => {
+      bot.replyPrivate({text: err});
     });
   }).catch((err) => {
-    console.log(err);
     bot.replyPrivate({text: 'Seems like you are not have not authenticated the app. Head over to: https://bx8m06qy1h.execute-api.us-east-1.amazonaws.com/dev/slack'});
   });
 });
@@ -50,20 +44,20 @@ slack.on('/stop', (msg, bot) => {
   bot.send('users.info', { user: user }).then(data => {
     const day = getDate(data['user']['tz_offset']);
 
-    db.setStop(user, day, (ticket, time) => {
-      let text;
-      if (ticket === null && time === null) {
-        text = "You don't have any active time logging. Please start a new logging with /start ticket-id before stopping."
-      } else {
-        text = "Time logging ended. Logged: " + (time / (1000*60*60)).toFixed(2) + " hours";
-        if (ticket && ticket !== '') {
-          text = text.concat(' on ticket: ' + ticket);
-        }
+    db.setStop(user, day).then((res) => {
+      const time = res['timeDiff'];
+      const ticket = res['ticket'];
+      
+      let text = "Time logging ended. Logged: " + (time / (1000*60*60)).toFixed(2) + " hours";
+      if (ticket && ticket !== '') {
+        text = text.concat(' on ticket: ' + ticket);
       }
       bot.replyPrivate({text: text}); 
+    }).catch((err) => {
+      bot.replyPrivate({text: err});
     });
+
   }).catch((err) => {
-    console.log(err);
     bot.replyPrivate({text: 'Seems like you are not have not authenticated the app. Head over to: https://bx8m06qy1h.execute-api.us-east-1.amazonaws.com/dev/slack'});
   });
 });

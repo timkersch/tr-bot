@@ -5,67 +5,75 @@ dynamo.AWS.config.update({accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAcce
 
 const Log = require('./dbModel').Log;
 
-function isActive(user, today, cb) {
-    Log
+function isActive(user, today) {
+    return new Promise((resolve, reject) => {
+        Log
         .query(user)
         .where('dateTicket').beginsWith(today)
         .filter('active').equals(true)
         .exec((err, post)  => {
             if (post && post.Count > 0) {
-                cb(true);
+                resolve(true);
             } else {
-                cb(false);
+                resolve(false);
             }
         });
-}
-
-function setStart(user, today, ticket, successCallback) {
-    const dateTicket = today.concat('_').concat(ticket);
-    
-    // See if this ID already exists
-    Log.get(user, dateTicket, (err, post) => {
-        // If it does not exist
-        if (err !== null || post === null || post.get('active')) {
-            isActive(user, today, (active) => {
-                if (!active) {            
-                    Log.create({
-                        user: user,
-                        date: today,
-                        dateTicket: dateTicket,
-                        ticket: ticket,
-                        active: true,
-                        counter: 0,
-                    }, (err, post) => {
-                        successCallback(true);
-                    });
-                } else {
-                    successCallback(false)
-                }
-            });
-        // If active
-        } else if(post !== null && post.get('active')) {
-            successCallback(false);
-        // If it exists but is not active - activate again
-        } else {
-            isActive(user, today, (active) => {
-                if (!active) {
-                    Log.update({
-                        user: user,
-                        dateTicket: dateTicket,
-                        active: true
-                    }, (err, post) => {
-                        successCallback(true);
-                    });
-                } else {
-                    successCallback(false);
-                }
-            });
-        }
     });
 }
 
-function setStop(user, today, cb) {
-    Log
+function setStart(user, today, ticket) {
+    return new Promise((resolve, reject) => {
+        const dateTicket = today.concat('_').concat(ticket);
+    
+        // See if this ID already exists
+        Log.get(user, dateTicket, (err, post) => {
+            // If it does not exist
+            if (post === null) {
+                // See if there are any other entries of this date
+                isActive(user, today).then(active => {
+                    if (active) {
+                        reject('You already have on active logging. Please stop it with /stop before starting a new.');
+                    } else {
+                        Log.create({
+                            user: user,
+                            date: today,
+                            dateTicket: dateTicket,
+                            ticket: ticket,
+                            active: true,
+                            counter: 0,
+                        }, (err, _) => {
+                            err ? reject(err) : resolve();
+                        });
+                    }              
+                });
+
+            // If it exists and is active
+            } else if(post && post.get('active')) {
+                reject('You already have on active logging. Please stop it with /stop before starting a new.');
+            
+            // If it exists but is not active - activate again
+            } else {
+                isActive(user, today).then((active) => {
+                    if (active) {
+                        reject('You already have on active logging. Please stop it with /stop before starting a new.');
+                    } else {
+                        Log.update({
+                            user: user,
+                            dateTicket: dateTicket,
+                            active: true
+                        }, (err, _) => {
+                            err ? reject(err) : resolve();
+                        });
+                    }
+                });
+            }
+        });
+    });
+}
+
+function setStop(user, today) {
+    return new Promise((resolve, reject) => {
+        Log
         .query(user)
         .where('dateTicket').beginsWith(today)
         .filter('active').equals(true)
@@ -85,13 +93,14 @@ function setStop(user, today, cb) {
                     dateTicket: dateTicket,
                     counter: newCounter,
                     active: false
-                }, (err, post) => {
-                    cb(ticket, timeDiff);
+                }, (err, _) => {
+                    err ? reject(err) : resolve({'ticket': ticket, 'timeDiff': timeDiff});
                 });
             } else {
-                cb(null, null);
+                reject('You do not have any active time logging. Please start a new logging with /start ticket-id before stopping.');
             }
         });
+    });
 }
 
 module.exports = {
